@@ -1,0 +1,55 @@
+# ΕΥΡΕΣΗ  PID ΜΕΣΩ ΟΝΟΜΑΤΟΣ
+
+#include <stdio.h>
+#include <string.h>
+#include <dirent.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <ctype.h>
+
+int main() {
+    DIR *dir = opendir("/proc");
+    struct dirent *entry;
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (!isdigit(entry->d_name[0])) continue;  // μόνο directories που είναι PID
+        char path[256];
+        snprintf(path, sizeof(path), "/proc/%s/comm", entry->d_name);
+
+        FILE *f = fopen(path, "r");
+        if (!f) continue;
+
+        char name[256];
+        if (fgets(name, sizeof(name), f) != NULL) {
+            name[strcspn(name, "\n")] = 0; // αφαιρεί newline
+            if (strcmp(name, "myprogram") == 0) {
+                pid_t pid = atoi(entry->d_name);
+                kill(pid, SIGUSR1);       // στέλνει το σήμα
+                printf("Στάλθηκε SIGUSR1 σε PID %d\n", pid);
+            }
+        }
+        fclose(f);
+    }
+    closedir(dir);
+    return 0;
+}
+
+
+# ΕΥΡΕΣΗ ΚΑΤΑΣΤΑΣΗΣ ΑΛΛΗΣ ΔΙΕΡΓΑΣΙΑΣ ΑΠΟ PID
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+
+int main() {
+    FILE *fp = popen("pgrep myprogram", "r");
+    if (!fp) return 1;
+
+    int pid;
+    while (fscanf(fp, "%d", &pid) == 1) {
+        kill(pid, SIGUSR1);
+        printf("Στάλθηκε SIGUSR1 σε PID %d\n", pid);
+    }
+    pclose(fp);
+    return 0;
+}
