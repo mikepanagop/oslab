@@ -79,3 +79,6 @@ int main() {
     execve("/home/mike/Documents/mike/OSLab/1st Exercise/riddle-20250930-0/riddle", args, env);
 }
 
+#------------Ch 9---------#
+nc -l 49842 //open server which listens to port 49842
+//Ανοιγω άλλο terminal και τρεχω riddle που ειναι ο client
