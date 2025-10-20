@@ -1,0 +1,11 @@
+#--------Challenge 0----------#
+touch .hello_there
+
+#--------Challenge 1----------#
+chmod 444 .hello_there
+
+#--------Challenge 2----------#
+Ctrl+Z
+fg (εντός των 10sec προτού χτυπήσει ο alarm)
+//Ακόμα και αν το η διεργασία γίνει SIGSTP στον kernel συνεχίζει το countdown 
+//και όταν τα 10sec παρέλθουν στέλνεται SIGALARM, το οποίο θα παραληφθεί από τη διεργασία όταν δεχθεί SIGCONT 
