@@ -97,4 +97,5 @@ echo '1' >> bf00
 ln bf00 bf01
 .
 .
-.ln bf00 bf09
+.
+ln bf00 bf09
