@@ -90,3 +90,11 @@ int main() {
 ln .hello_there .hey_there
 //ln TARGET LINK_NAME
 
+#--------Challenge 8----------#
+touch bf00
+truncate -s 1G bf00
+echo '1' >> bf00
+ln bf00 bf01
+.
+.
+.ln bf00 bf09
