@@ -14,3 +14,17 @@ fg (εντός των 10sec προτού χτυπήσει ο alarm)
 Ctrl+Z
 ps (για εύρεση PID)
 kill -18 PID (-18 == -SIGCONT)
+
+#--------Challenge 3----------#
+export ANSWER='42'
+
+#--------Challenge 4----------#
+mkfifo magic_mirror
+
+//Ένα named pipe (ή FIFO – First In First Out) είναι ένας ειδικός τύπος αρχείου στο Unix/Linux, 
+που επιτρέπει επικοινωνία μεταξύ διεργασιών (Inter-Process Communication, IPC).
+//Η διαφορά του από ένα “κανονικό” pipe (|) είναι ότι το named pipe έχει όνομα στο filesystem 
+— δηλαδή υπάρχει ως αρχείο που μπορείς να βλέπεις και να ανοίγεις από διαφορετικά προγράμματα ή τερματικά.
+//Blocking I/O. Αν δεν υπάρχει αναγνώστης ή γράφων, οι διεργασίες περιμένουν.
+
+#--------Challenge 5----------#
