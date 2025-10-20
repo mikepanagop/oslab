@@ -28,3 +28,36 @@ mkfifo magic_mirror
 //Blocking I/O. Αν δεν υπάρχει αναγνώστης ή γράφων, οι διεργασίες περιμένουν.
 
 #--------Challenge 5----------#
+aux5.c
+
+#include <unistd.h>
+#include <fcntl.h>
+
+int main() {
+        int fd = open("test", O_RDWR|O_CREAT, 0644);
+        dup2(fd, 99);
+
+        int p = fork();
+
+        if (p == 0) {
+                char *args[] = {"/home/mike/Documents/mike/OSLab/1st_Exercise_upd/riddle", NULL};
+                char *env[]  = {NULL};
+
+                execve("/home/mike/Documents/mike/OSLab/1st_Exercise_upd/riddle/riddle", args, env);
+        }
+        else pause();
+}
+
+
+#--------Challenge 5 (εναλλακτική)----------#
+aux5_alt.c
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+
+int main() {
+        int fd = open("test", O_RDWR|O_CREAT, 0644);
+        dup2(fd, 99);
+        system("./riddle");
+}
