@@ -179,3 +179,10 @@ int main() {
 //(3o Βήμα) Ανοίγω vim aux12.c  και το ενημερώνω με τις πληροφορίες που μόλις πήρα
 //(4ο Βήμα) gcc και ./aux12
 //(5ο Βήμα) fg για συνέχιση riddle
+
+#--------Challenge 13----------#
+//(1ο Βήμα) chmod 644 .hello_there (δίνω δικαιώματα για -w στο .hello_there)
+//(2o Βήμα) τρέχω riddle και κάνω Ctrl+Z
+//(3o Βήμα) truncate -s 32768 .hello_there
+//(4ο Βήμα) fg και enter στο riddle
+
