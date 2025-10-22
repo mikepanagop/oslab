@@ -99,3 +99,14 @@ ln bf00 bf01
 .
 .
 ln bf00 bf09
+
+#--------Challenge 9----------#
+//ανοίγω ένα τερματικό (χωρίς να τρέξω riddle) και εκτελώ την εντολή
+nc -l 49842 //open server which listens to port 49842
+//Ανοίγω άλλο terminal και τρέχω riddle που θα γίνει ο client.
+//Καθώς τρέχω το riddle, ο κώδικας του riddle εκτελεί τις εντολές socket και connect, για να δημιουργήσει ένα end_point
+//και να συνδεθεί στην port 48942 που έχει ανοίξει το πρώτο terminal
+
+----- γενικά για επικοιν. μεταξύ terminals
+//(1ο terminal) nc -l 48942
+//(2o terminal) nc 127.0.0.1 48942  
