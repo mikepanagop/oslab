@@ -186,3 +186,46 @@ int main() {
 //(3o Βήμα) truncate -s 32768 .hello_there
 //(4ο Βήμα) fg και enter στο riddle
 
+#--------Challenge 14----------#
+aux14.c
+
+#define _GNU_SOURCE
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+
+        int i;
+        int status;
+        while(1) {
+
+                int p = fork();
+
+                if (p == 0) {
+                        int my_pid = getpid();
+                        printf("%d\n", my_pid);
+                        if (my_pid == 32767) {
+
+                                char *args[] = {"/home/mike/Documents/mike/OSLab/1st Exercise/riddle-20250930-0/riddle", NULL};
+                                char *env[]  = {NULL};
+                                execve("/home/mike/Documents/mike/OSLab/1st Exercise/riddle-20250930-0/riddle", args, env);
+                        }
+                        else exit(0);
+                }
+                else if (p == 32767) break;
+        }
+        wait(&status);
+}
+
+#--------Challenge 15----------#
+tier2.c
+
+void setup_tier2 () {
+        return;
+}
+
+//gcc -fPIC -shared tier2.c -o tier2.so
+//τρέχω riddle
