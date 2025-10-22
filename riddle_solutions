@@ -121,3 +121,61 @@ ln secret_number test1
 ./riddle
 //σε άλλο terminal για εύρεση του αριθμού
 cat test1
+
+#--------Challenge 11----------#
+aux11.c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+        int fd1 = open("secret_number", O_RDWR|O_CREAT, 0644);
+        int fd2 = open("text", O_RDWR|O_CREAT, 0644);
+        int p, status;
+
+        p = fork();
+
+        if (p == 0) {
+                char *args[] = {"/home/mike/Documents/mike/OSLab/1st Exercise/riddle-20250930-0/riddle", NULL};
+                char *env[]  = {NULL};
+
+                execve("/home/mike/Documents/mike/OSLab/1st Exercise/riddle-20250930-0/riddle", args, env);
+        }
+        else {
+                sleep(2);
+                lseek(fd1,0,SEEK_SET);
+                char buff[4096];
+                int bytes_read = read(fd1, buff, sizeof(buff)-1);
+                if (bytes_read > 0) {
+                        buff[bytes_read] = '\0';  // Null-terminate
+                        write(fd2, buff, bytes_read);
+                }
+                wait(&status);
+                exit(0);
+       }
+}
+
+#--------Challenge 12----------#
+aux12.c
+
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+        char c = '.'; //εδώ μπαίνει ο χαρακτήρας από την εκφώνηση
+        int fd = open("/tmp/riddle-...", O_RDWR, 0644); //εδώ μπαίνει το αρχείο που δημιουργείται όταν τρέξω το riddle στον /tmp
+        lseek(fd,111,SEEK_SET);//απεικονίζει το αρχείο με mmap() σε μία θέση μνήμη και περιμένει σε standard offset(111) να βρει τον χαρακτήρρα
+        write(fd, &c, sizeof(char));
+        exit(0);
+}
+
+//(1ο Βήμα) Τρέχω strace ./riddle   
+//(2o Βήμα) Κάνω Ctrl+Z, για να σταματήσω εκτέλεση riddle, βρίσκω χαρακτήρα και /tmp/riddle-...
+//(3o Βήμα) Ανοίγω vim aux12.c  και το ενημερώνω με τις πληροφορίες που μόλις πήρα
+//(4ο Βήμα) gcc και ./aux12
+//(5ο Βήμα) fg για συνέχιση riddle
