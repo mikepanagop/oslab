@@ -110,3 +110,14 @@ nc -l 49842 //open server which listens to port 49842
 ----- γενικά για επικοιν. μεταξύ terminals
 //(1ο terminal) nc -l 48942
 //(2o terminal) nc 127.0.0.1 48942  
+
+#--------Challenge 10----------#
+//Ουσιαστικά το πρόβλημα είναι ότι το riddle κάνει unlink το αρχείο secret_number, όπου εκεί έχει αποθηκεύσει
+//τον κρυφό αριθμό. Ο reference counter μειώνεται στο μηδέν με αποτέλεσμα το αρχείο secret_number να "χάνεται".
+
+//Προτού τρέξω riddle:
+touch secret_number
+ln secret_number test1
+./riddle
+//σε άλλο terminal για εύρεση του αριθμού
+cat test1
