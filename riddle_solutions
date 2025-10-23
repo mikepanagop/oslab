@@ -229,3 +229,17 @@ void setup_tier2 () {
 
 //gcc -fPIC -shared tier2.c -o tier2.so
 //τρέχω riddle
+
+#--------Challenge 16----------#
+aux16.c
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
+void setup_tier2(void) {
+        void *addr = (void*) 0x6042000;
+        void *pid = mmap(addr, 4096, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
+        *((long*) pid) = (long)getpid();
+}
+
