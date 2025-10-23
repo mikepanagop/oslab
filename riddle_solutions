@@ -84,7 +84,8 @@ int main() {
 }
 
 #--------Challenge 6 (εναλλακτική)----------#
-ΛΕΙΠΕΙ
+mkfifo ping, mkfifo pong, exec 33<>ping, exec 34<>ping, exec 53<>pong, exec 54<>pong
+
 
 #--------Challenge 7----------#
 ln .hello_there .hey_there
