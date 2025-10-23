@@ -243,3 +243,18 @@ void setup_tier2(void) {
         *((long*) pid) = (long)getpid();
 }
 
+//gcc -fPIC -shared aux16.c -o tier2.so
+
+#--------Challenge 17----------#
+tier3.c
+
+void unlock_tier3() {
+        return;
+}
+
+void authorize_tier3() {
+        unlock_tier3();
+        return;
+}
+
+//gcc -fPIC -shared tier3.c -o tier3.so
