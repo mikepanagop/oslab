@@ -171,7 +171,8 @@ static int lunix_chrdev_open(struct inode *inode, struct file *filp)
     private_state = kzalloc(sizeof(*private_state), GFP_KERNEL);
     private_state->type = mes_type;
     private_state->sensor = &lunix_sensors[sensor_num];  //check the index of the table
-    filp->private_data = (void*)private_state;
+    private_state->buf_timestamp = ktime_get_real_seconds();
+	filp->private_data = (void*)private_state;
 out:
 	debug("leaving, with ret = %d\n", ret);
 	pr_err("Opened the file succesfully\n");
