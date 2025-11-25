@@ -23,7 +23,6 @@
 #include <linux/mmzone.h>
 #include <linux/vmalloc.h>
 #include <linux/spinlock.h>
-#include <linux/string.h>
 
 #include "lunix.h"
 #include "lunix-chrdev.h"
@@ -43,17 +42,16 @@ struct cdev lunix_chrdev_cdev;
  * the compiler happy. This function is not yet used, because this helpcode
  * is a stub.
  */
-//static int __attribute__((unused)) lunix_chrdev_state_needs_refresh(struct lunix_chrdev_state_struct *);
-static int lunix_chrdev_state_needs_refresh(struct lunix_chrdev_state_struct * state) {
-    struct lunix_sensor_struct *sensor;
-    struct lunix_msr_data_struct *msr_data;
+static int __attribute__((unused)) lunix_chrdev_state_needs_refresh(struct lunix_chrdev_state_struct *);
+static int lunix_chrdev_state_needs_refresh(struct lunix_chrdev_state_struct *state)
+{
+	struct lunix_sensor_struct *sensor;
+	
+	WARN_ON ( !(sensor = state->sensor));
+	/* ? */
 
-    WARN_ON(!(sensor = state->sensor));
-    msr_data = sensor->msr_data[state->type];
-    WARN_ON(!msr_data);
-
-    if (msr_data->last_update > state->buf_timestamp) return 1;
-    else return 0;
+	/* The following return is bogus, just for the stub to compile */
+	return 0; /* ? */
 }
 
 /*
@@ -63,10 +61,9 @@ static int lunix_chrdev_state_needs_refresh(struct lunix_chrdev_state_struct * s
  */
 static int lunix_chrdev_state_update(struct lunix_chrdev_state_struct *state)
 {
-	struct lunix_sensor_struct *sensor;
+	struct lunix_sensor_struct __attribute__((unused)) *sensor;
 	
-	debug("entering\n");
-	pr_err("Entering update function\n");
+	debug("leaving\n");
 
 	/*
 	 * Grab the raw data quickly, hold the
@@ -74,71 +71,21 @@ static int lunix_chrdev_state_update(struct lunix_chrdev_state_struct *state)
 	 */
 	/* ? */
 	/* Why use spinlocks? See LDD3, p. 119 */
-    struct lunix_msr_data_struct *msr_data;
-    sensor = state->sensor;
-    WARN_ON(!sensor);
-    
-    spin_lock(&sensor->lock);
-    msr_data = sensor->msr_data[state->type];
-    uint16_t raw_values = msr_data->values[0];  //check for uint32_t
-    spin_unlock(&sensor->lock);
-
-	pr_err("I got the raw data\n");
 
 	/*
 	 * Any new data available?
 	 */
 	/* ? */
-    if (!lunix_chrdev_state_needs_refresh(state)) {
-        pr_err("No update needed\n");
-        return -EAGAIN;
-    }
 
 	/*
 	 * Now we can take our time to format them,
 	 * holding only the private state semaphore
 	 */
-    /* ? */
-    long int_info;
-    switch (state->type) {
-        case 0 : 
-			int_info = lookup_voltage[raw_values];
-			break;
-        case 1 : 
-			int_info = lookup_temperature[raw_values];
-			break;
-        case 2 : 
-			int_info = lookup_light[raw_values];
-			break; 
-        default: 
-			pr_err("invalid measurement type\n");
-			break;
-    }
 
-    long integer_part = int_info / 1000;
-    long decimal_part = int_info % 1000;
-    char text_info[20];
-    state->buf_lim = snprintf(text_info, sizeof(text_info), "%ld.%03ld", integer_part, decimal_part);  //check int long types
-
-    int ret = down_interruptible(&state->lock);
-	if (ret) return -ERESTARTSYS;
-
-	strcpy(state->buf_data, text_info);
-
-    /*for (int i=0; i<sizeof(text_info); i++) {	
-		state->buf_data[i] = text_info[i];
-		if (state->buf_data[i] == '\0') break;
-	}*/
-
-	pr_err("Data copied succesfully to buf_data\n");
-
-    state->buf_timestamp = ktime_get_real_seconds();
-    up(&state->lock);
-	ret = 0;
+	/* ? */
 
 	debug("leaving\n");
-	pr_err("Update leaving\n");
-	return ret;
+	return 0;
 }
 
 /*************************************
@@ -161,33 +108,19 @@ static int lunix_chrdev_open(struct inode *inode, struct file *filp)
 	 * Associate this open file with the relevant sensor based on
 	 * the minor number of the device node [/dev/sensor<NO>-<TYPE>]
 	 */
-	unsigned int minor_num = iminor(inode);
-	unsigned int mes_type = minor_num & 0x07;
-	unsigned int sensor_num = (minor_num & ~(0x07) >> 3);
 	
 	/* Allocate a new Lunix character device private state structure */
 	/* ? */
-	struct lunix_chrdev_state_struct *private_state;
-    private_state = kzalloc(sizeof(*private_state), GFP_KERNEL);
-    private_state->type = mes_type;
-    private_state->sensor = &lunix_sensors[sensor_num];  //check the index of the table
-    private_state->buf_timestamp = ktime_get_real_seconds();
-	filp->private_data = (void*)private_state;
 out:
 	debug("leaving, with ret = %d\n", ret);
-	pr_err("Opened the file succesfully\n");
 	return ret;
 }
 
-
 static int lunix_chrdev_release(struct inode *inode, struct file *filp)
 {
-	pr_info("%s: Entering\n", __func__);
-    filp->private_data = NULL;
-	pr_info("%s: Leaving\n", __func__);
+	/* ? */
 	return 0;
 }
-
 
 static long lunix_chrdev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
@@ -196,8 +129,7 @@ static long lunix_chrdev_ioctl(struct file *filp, unsigned int cmd, unsigned lon
 
 static ssize_t lunix_chrdev_read(struct file *filp, char __user *usrbuf, size_t cnt, loff_t *f_pos)
 {
-	//ssize_t ret;
-	pr_err("read function start");
+	ssize_t ret;
 
 	struct lunix_sensor_struct *sensor;
 	struct lunix_chrdev_state_struct *state;
@@ -208,61 +140,28 @@ static ssize_t lunix_chrdev_read(struct file *filp, char __user *usrbuf, size_t 
 	sensor = state->sensor;
 	WARN_ON(!sensor);
 
-	pr_err("After warns\n");
-
 	/* Lock? */
 	/*
 	 * If the cached character device state needs to be
 	 * updated by actual sensor data (i.e. we need to report
-	 * on a "fresh" measurement) do so
+	 * on a "fresh" measurement, do so
 	 */
-    //wait_queue_head_t *wq;
-    struct lunix_msr_data_struct *msr_data;
-
-    //wq = &sensor->wq;
-    msr_data = sensor->msr_data[state->type];
-	pr_err("Copied msr_data of sensor\n");
-    
 	if (*f_pos == 0) {
 		while (lunix_chrdev_state_update(state) == -EAGAIN) {
 			/* ? */
 			/* The process needs to sleep */
 			/* See LDD3, page 153 for a hint */
-             wait_event_interruptible(sensor->wq, state->buf_timestamp < msr_data->last_update);
 		}
 	}
 
-    char text[20]; 
-	strcpy(text, state->buf_data);
-	pr_err("buff_data copied to text\n");
-
-    /*for (int i=0; i<20; i++){
-        text[i] = state->buf_data[i];
-		if (state->buf_data[i] == '\0') break;
-    }*/
 	/* End of file */
 	/* ? */
-    if (*f_pos >= state->buf_lim) {
-        *f_pos = 0;
-        return 0;
-    }
+	
 	/* Determine the number of cached bytes to copy to userspace */
 	/* ? */
-    int not_copied, delta, to_copy = (*f_pos + cnt) < strlen(text) ? cnt : (strlen(text) - *f_pos);
-    not_copied = copy_to_user(usrbuf, &text[*f_pos], to_copy);
-    delta = to_copy - not_copied;
-    if (not_copied) {
-        pr_warn("We cannot copy %d number of chars\n", delta);
-        return -EFAULT;
-    }
-	pr_err("read function end");
-
-	*f_pos += delta;
-	return delta; //check for ssize_t for ret
 
 	/* Auto-rewind on EOF mode? */
 	/* ? */
-    //already made from us
 
 	/*
 	 * The next two lines  are just meant to suppress a compiler warning
@@ -270,11 +169,11 @@ static ssize_t lunix_chrdev_read(struct file *filp, char __user *usrbuf, size_t 
 	 * It's true, this helpcode is a stub, and doesn't use them properly.
 	 * Remove them when you've started working on this code.
 	 */
-	//ret = -ENODEV;
-	//goto out;
-//out:
+	ret = -ENODEV;
+	goto out;
+out:
 	/* Unlock? */
-	//return ret;
+	return ret;
 }
 
 static int lunix_chrdev_mmap(struct file *filp, struct vm_area_struct *vma)
@@ -310,11 +209,9 @@ int lunix_chrdev_init(void)
 	dev_no = MKDEV(LUNIX_CHRDEV_MAJOR, 0);
 	/* ? */
 	/* register_chrdev_region? */
-    ret = register_chrdev_region(dev_no, lunix_minor_cnt, "lunix");
-   
 
 	/* Since this code is a stub, exit early */
-	//return 0;
+	return 0;
 
 	if (ret < 0) {
 		debug("failed to register region, ret = %d\n", ret);
@@ -322,7 +219,6 @@ int lunix_chrdev_init(void)
 	}
 	/* ? */
 	/* cdev_add? */
-    ret = cdev_add(&lunix_chrdev_cdev, dev_no, lunix_minor_cnt);
 	if (ret < 0) {
 		debug("failed to add character device\n");
 		goto out_with_chrdev_region;
