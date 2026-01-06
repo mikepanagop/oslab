@@ -82,7 +82,7 @@ root@utopia:~# hexdump -C -n 4 -s$((1024+48)) /dev/vdb
 1.8
 Το μπλοκ (block) είναι η θεμελιώδης μονάδα αποθήκευσης και διαχείρισης δεδομένων
 ενός συστήματος αρχείων. Ένα μπλοκ είναι η μικρότερη ποσότητα χώρου που μπορεί 
-να δεσμεύσει ένα αρχείο.
+να δεσμεύσει ένα αρχείο στο δισκο.
 
 1.9
 root@utopia:~# dumpe2fs /dev/vdb | grep "Block size"
@@ -169,3 +169,201 @@ root@utopia:~# hexdump -C -n 4 -s$((1024+16)) /dev/vdb
 σε λειτουργική κατάσταση σε περίπτωση σφάλματος."
 
 1.16
+εφεδρικα στο πρωτο block καθε block group διοτι 
+dumpe2fs /dev/vdb | grep -i sparse δεν δινει αποτελεσμα 
+
+1.17
+Στο σύστημα αρχείων ext2, ένα block group είναι μια λογική υποδιαίρεση του συστήματος 
+αρχείων που περιλαμβάνει ένα σύνολο από data blocks και τις αντίστοιχες μεταδεδομένες δομές (bitmaps, inode table, αντίγραφα superblock).
+
+Ο σκοπός των block groups είναι η βελτίωση της απόδοσης μέσω καλύτερης τοπικότητας δεδομένων
+και η αύξηση της αξιοπιστίας, καθώς η καταστροφή ενός block group δεν συνεπάγεται απώλεια ολόκληρου του συστήματος αρχείων.
+
+1.18
+το συστημα αρxειων οριζει ενα μεγεθος για το καθε block. Επιπλεον γνωριζουμε οτι το block bitmap καταλαμβανει ενα block και κρατα πληροφορια για το ποια απο ολα τα blocks του group ειναι πιασμενα και ποια αδεια.
+Συνεπως το block bitmap περιεχει συνολικα block_size*8 bits, αρα το block group αποτελειται απο τον ιδιο αριθμο απο blocks (blocks_per_bg = block_size*8). Μπορουμε να βρουμε τον αριθμο των block groups απο την διαιρεση 
+total_blocks/blocks_per_bg, οπου total_blocks = μεγεθος συστηματος αρχειου/block_size. Στην περιπτωση οπου η διαιρεση δεν ειναι τελεια, το τελευταιο block καταλαμβανει μικροτερο αριθμο απο blocks, οσα περισσευουν
+Το bg i διαδεχεται το bg i-1 στον δισκο. Αρα εχουμε διαδοχικη κατανομη των bg. Το πρωτο block ειναι το boot sector.
+
+1.19
+root@utopia:~# dumpe2fs /dev/vdb | grep "Group"
+dumpe2fs 1.47.0 (5-Feb-2023)
+Group 0: (Blocks 1-8192)
+  Primary superblock at 1, Group descriptors at 2-2
+Group 1: (Blocks 8193-16384)
+  Backup superblock at 8193, Group descriptors at 8194-8194
+Group 2: (Blocks 16385-24576)
+  Backup superblock at 16385, Group descriptors at 16386-16386
+Group 3: (Blocks 24577-32768)
+  Backup superblock at 24577, Group descriptors at 24578-24578
+Group 4: (Blocks 32769-40960)
+  Backup superblock at 32769, Group descriptors at 32770-32770
+Group 5: (Blocks 40961-49152)
+  Backup superblock at 40961, Group descriptors at 40962-40962
+Group 6: (Blocks 49153-51199)
+  Backup superblock at 49153, Group descriptors at 49154-49154
+
+
+δευτερος τροπος
+root@utopia:~# hexdump -C -n 4 -s$((1024+4)) /dev/vdb   #συνολικος αριθμος blocks
+00000404  00 c8 00 00                                       |....|
+00000408
+root@utopia:~# hexdump -C -n 4 -s$((1024+32)) /dev/vdb   #blocks per bg
+00000420  00 20 00 00                                       |. ..|
+00000424
+κανουμε την διαιρεση 
+
+1.20
+Στο ext2, ο block group descriptor είναι μια δομή μεταδεδομένων που περιγράφει την κατάσταση και τη διάταξη κάθε block group του συστήματος αρχείων.
+Κάθε block group έχει έναν αντίστοιχο descriptor, και όλοι μαζί σχηματίζουν τον Group Descriptor Table.
+
+Πίνακας που περιέχει έναν block group descriptor για κάθε block group.
+Κάθε block group descriptor αποθηκεύει τα παρακάτω μεταδεδομένα για το block group:
+● Θέση του block bitmap του block group
+● Θέση του inode bitmap του block group
+● Θέση του inode table μέσα στο block group
+● Αριθμός διαθέσιμων blocks στο block group
+● Αριθμός διαθέσιμων inodes στο block group
+● Αριθμός καταλόγων στο block group
+
+1.21
+Τα εφεδρικά αντίγραφα των block group descriptors στο σύστημα αρχείων ext2 υπάρχουν για λόγους αξιοπιστίας και ανάκτησης.
+Οι block group descriptors περιέχουν κρίσιμες πληροφορίες για τη διάταξη και την κατάσταση κάθε block group, και η απώλειά τους καθιστά το σύστημα αρχείων μη λειτουργικό.
+Η αποθήκευση εφεδρικών αντιγράφων σε διαφορετικά block groups επιτρέπει την αποκατάσταση του συστήματος αρχείων σε περίπτωση καταστροφής των πρωτεύοντων μεταδεδομένων.
+
+1.22
+σε καθε block group που υπαρχει και backup superblock. Στην δικη μας περιπτωση σε ολα τα bg ακριβως μετα απο το superblock 
+
+root@utopia:~# dumpe2fs /dev/vdb | grep "Group descriptors"
+dumpe2fs 1.47.0 (5-Feb-2023)
+  Primary superblock at 1, Group descriptors at 2-2
+  Backup superblock at 8193, Group descriptors at 8194-8194
+  Backup superblock at 16385, Group descriptors at 16386-16386
+  Backup superblock at 24577, Group descriptors at 24578-24578
+  Backup superblock at 32769, Group descriptors at 32770-32770
+  Backup superblock at 40961, Group descriptors at 40962-40962
+  Backup superblock at 49153, Group descriptors at 49154-49154
+
+**hexdump check 
+
+1.23
+Block bitmap: δομή που καταγράφει ποια data blocks ενός block group είναι ελεύθερα ή δεσμευμένα.
+Inode bitmap: δομή που καταγράφει ποια inodes ενός block group είναι ελεύθερα ή δεσμευμένα.
+
+Και τα δύο είναι bitmaps, δηλαδή:
+κάθε bit αντιστοιχεί σε μία μονάδα (block ή inode)
+0 → ελεύθερο
+1 → κατειλημμένο
+
+Υπάρχει ένα block bitmap και ένα inode bitmap ανά block group.
+
+Η θεση δεν είναι σε σταθερό block.
+Η ακριβής θέση τους:
+αποθηκεύεται στον block group descriptor του αντίστοιχου block group στα πεδία bg_block_bitmap και bg_inode_bitmap. Αυτα τα πεδια περιεχουν τον απολυτο αριθμο του block ξεκινωντας απο το block 0
+
+1.24
+Στο σύστημα αρχείων ext2, τα inode tables είναι περιοχές του δίσκου που περιέχουν τους inodes, δηλαδή τις βασικές δομές μεταδεδομένων που περιγράφουν τα αρχεία και τους καταλόγους.
+Κάθε inode έχει σταθερό μέγεθος (π.χ. 128 bytes στο ext2). Τα inodes τοποθετούνται συνεχόμενα μέσα στο inode table. Δεν υπάρχει ένα inode table για όλο το filesystem.
+Υπάρχει ένα inode table ανά block group. Η ακριβής θέση του inode table δεν είναι σταθερή, αποθηκεύεται στο block group descriptor στο πεδίο bg_inode_table. Το bg_inode_table περιέχει
+τον απόλυτο αριθμό block όπου ξεκινά το inode table του block group.
+
+1.25
+Κάθε inode περιέχει πληροφορίες όπως:
+τύπος αρχείου
+δικαιώματα
+ιδιοκτήτης / ομάδα
+μέγεθος
+χρονικές σφραγίδες
+δείκτες προς data blocks
+
+βρισκονται στο inode tabe του bg. γνωριζοντας οτι το καθε ενα καταλαμβανει 128 bytes μπορουμε να πλοηγηθουμε μεσα σε αυτο με καταλληλο byte offset. (inodeTable_start + (n-1)*128 + offset)
+
+1.26
+1ος τροπος 
+
+root@utopia:~# dumpe2fs /dev/vdb | grep -E "Blocks per group|Inodes per group"
+dumpe2fs 1.47.0 (5-Feb-2023)
+Blocks per group:         8192
+Inodes per group:         1832
+
+2ος τροπος
+root@utopia:~# hexdump -C -n 4 -s$((1024+32)) /dev/vdb   #number of blocks per bg
+00000420  00 20 00 00                                       |. ..|
+00000424
+root@utopia:~# hexdump -C -n 4 -s$((1024+40)) /dev/vdb    #number of inodes per bg
+00000428  28 07 00 00                                       |(...|
+0000042c
+
+1.27
+1ος τροπος 
+
+root@utopia:/mnt# stat dir2/helloworld
+  File: dir2/helloworld
+  Size: 42              Blocks: 2          IO Block: 1024   regular file
+Device: 253,16  Inode: 9162        Links: 1
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2023-12-12 15:23:16.000000000 +0000
+Modify: 2023-12-12 15:23:16.000000000 +0000
+Change: 2023-12-12 15:23:16.000000000 +0000
+ Birth: -
+
+root@utopia:/mnt# ls -i dir2/helloworld
+9162 dir2/helloworld
+
+2ος τροπος
+μπλα μπλα
+inode of /dir2/helloworld = 23ca = 9162
+
+1.28 
+(9162-1)/1832 = ειναι το δευτερο inode απο το inode table του 5ou bg
+
+1.29
+root@utopia:/mnt# hexdump -s$((GDT_OFFSET + 5*GD_SIZE)) -n$((GD_SIZE)) -C /d
+ev/vdb
+000008a0  03 a0 00 00 04 a0 00 00  05 a0 00 00 17 1f 26 07  |..............&.|
+000008b0  01 00 04 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000008c0
+διαβαζω απο το gdt το descriptor που αφορα το 5o gb. Και βρισκω οτι το inode table για αυτο το bg (το 50 δηλαδη) που μας ενδιαφερει ειναι στο a005=40965 block.
+
+1.30
+root@utopia:/mnt# hexdump -s$((40965*block_size + INODE_SIZE)) -n$((INODE_SIZE)) -C /dev/vdb
+02801480  a4 81 00 00 2a 00 00 00  e4 7a 78 65 e4 7a 78 65  |....*....zxe.zxe|
+02801490  e4 7a 78 65 00 00 00 00  00 00 01 00 02 00 00 00  |.zxe............|
+028014a0  00 00 00 00 01 00 00 00  01 04 00 00 00 00 00 00  |................|
+028014b0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+028014e0  00 00 00 00 bc f3 45 a3  00 00 00 00 00 00 00 00  |......E.........|
+028014f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+02801500
+με αυτον τον τροπο διαβαζω το δευτερο inode απο το inode table που ξεκιναει στο block 40965
+
+1.31
+στο παραοπανω περιεχομενο του inode παω στο byte offset 40 (στον data_block0 pointer) και διαβαζω 0401. 
+Αρα τα δεδομενα βρικσονται στο block 1025
+
+1.32
+root@utopia:/mnt# hexdump -s$((247*block_size)) -n 64 -C /dev/vdb
+0003dc00  c9 23 00 00 0c 00 01 00  2e 00 00 00 02 00 00 00  |.#..............|
+0003dc10  0c 00 02 00 2e 2e 00 00  ca 23 00 00 e8 03 0a 00  |.........#......|
+0003dc20  68 65 6c 6c 6f 77 6f 72  6c 64 00 00 00 00 00 00  |helloworld......|
+0003dc30  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+
+Για το μεγεθος του αρχειο /dir2/helloworld θα διαβασω απο το data block του /dir2 το πεδιο size που αντιστοιχει στο αρχειο helloworld.
+Αυτο ειιναι 03ε8 και αντιστοιχει σε μεγεθος 1000 bytes (προφανως εχει καταληφθει ενα ολοκληρο block για αυτο το αρχειο)
+
+1.33
+θα διαβασω το block 1025 που βρηκα πριν οτι ειναι το data block του συγκεκριεμνου αρχειου και θα παρω τα δεδομενα του 
+
+root@utopia:/mnt# hexdump -s$((1025*block_size)) -n 1204 -C /dev/vdb
+00100400  57 65 6c 63 6f 6d 65 20  74 6f 20 74 68 65 20 4d  |Welcome to the M|
+00100410  69 67 68 74 79 20 57 6f  72 6c 64 20 6f 66 20 46  |ighty World of F|
+00100420  69 6c 65 73 79 73 74 65  6d 73 00 00 00 00 00 00  |ilesystems......|
+00100430  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+001008b0  00 00 00 00                                       |....|
+001008b4
+
+
+
+
+
