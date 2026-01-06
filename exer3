@@ -369,8 +369,32 @@ root@utopia:/mnt# hexdump -s$((247*block_size)) -n 64 -C /dev/vdb
 inode of /dir2/helloworld = 23ca = 9162
 
 1.28 
+1ος τροπος
 
+#βρισκουμε inode number
+root@utopia:~# stat /mnt/dir2/helloworld
+  File: /mnt/dir2/helloworld
+  Size: 42              Blocks: 2          IO Block: 1024   regular file
+Device: 253,16  Inode: 9162        Links: 1
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2023-12-12 15:23:16.000000000 +0000
+Modify: 2023-12-12 15:23:16.000000000 +0000
+Change: 2023-12-12 15:23:16.000000000 +0000
+ Birth: -
+
+#βρισκουμε ποσα inodes υπαρχουν σε καθε group
+root@utopia:~# dumpe2fs /dev/vdb | grep "Inodes per group"
+dumpe2fs 1.47.0 (5-Feb-2023)
+Inodes per group:         1832
+
+κανουμε την διαιρεση (9162-1)//1832 = 5 block group
+
+2ος τροπος
+Το inode number και το inodes per group προσδιορισθηκαν με hexdump σε προηγουμενα βηματα
 #9161/1832 = 5.000545851528384 το οποιο σημαινει οτι πρεπει αν διαβασουμε το δευτερο inode απο το inode table του bg5
+
+
+
 #βρικσω απο gdt την θεση του inode table του bg5 = 40965
 root@utopia:/mnt# hexdump -s$((GDT_OFFSET + 5*GD_SIZE)) -n$((GD_SIZE)) -C /d
 ev/vdb
@@ -391,12 +415,26 @@ root@utopia:/mnt# hexdump -s$((40965*block_size + INODE_SIZE)) -n$((INODE_SIZE))
 (9162-1)/1832 = ειναι το δευτερο inode απο το inode table του 5ou bg
 
 1.29
+1ος τροπος
+#κανουμε dumpe2fs και κραταμε την πληροφορια γαι το block group 5
+Group 5: (Blocks 40961-49152)
+  Backup superblock at 40961, Group descriptors at 40962-40962
+  Block bitmap at 40963 (+2)
+  Inode bitmap at 40964 (+3)
+  Inode table at 40965-41193 (+4)
+  7959 free blocks, 1830 free inodes, 1 directories
+  Free blocks: 41194-49152
+  Free inodes: 9163-10992
+επειδη μας ενδαφερει το 2ο inode απο το inode table, και επειδη καθε inode εχει μεγεθος μονο 128 bytes, προφανως το block 40965 περιεχει το ζητουμενο inode
+
+2ος τροπος
+#διαβαζω απο το gdt το descriptor που αφορα το 5o gb. Και βρισκω οτι το inode table για αυτο το bg5 που μας ενδιαφερει ειναι στο a005=40965 block.
 root@utopia:/mnt# hexdump -s$((GDT_OFFSET + 5*GD_SIZE)) -n$((GD_SIZE)) -C /d
 ev/vdb
 000008a0  03 a0 00 00 04 a0 00 00  05 a0 00 00 17 1f 26 07  |..............&.|
 000008b0  01 00 04 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 000008c0
-διαβαζω απο το gdt το descriptor που αφορα το 5o gb. Και βρισκω οτι το inode table για αυτο το bg (το 50 δηλαδη) που μας ενδιαφερει ειναι στο a005=40965 block.
+
 
 1.30
 root@utopia:/mnt# hexdump -s$((40965*block_size + INODE_SIZE)) -n$((INODE_SIZE)) -C /dev/vdb
@@ -408,25 +446,48 @@ root@utopia:/mnt# hexdump -s$((40965*block_size + INODE_SIZE)) -n$((INODE_SIZE))
 028014e0  00 00 00 00 bc f3 45 a3  00 00 00 00 00 00 00 00  |......E.........|
 028014f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 02801500
-με αυτον τον τροπο διαβαζω το δευτερο inode απο το inode table που ξεκιναει στο block 40965
+με αυτον τον τροπο διαβαζω το δευτερο inode απο το inode table που ξεκιναει στο block 40965 (check αν χρειαζεται επιπλεον περιγραφη των πεδιων) 
 
 1.31
+1ος τροπος
+#μπαινω σε debug mode στο /dev/vdb 
+root@utopia:~# debugfs /dev/vdb
+debugfs 1.47.0 (5-Feb-2023)
+#εκτελεω την παρακατω εντολη 
+debugfs:  blocks dir2/helloworld
+1025
+
+2ος τροπος
 στο παραοπανω περιεχομενο του inode παω στο byte offset 40 (στον data_block0 pointer) και διαβαζω 0401. 
 Αρα τα δεδομενα βρικσονται στο block 1025
 
 1.32
-root@utopia:/mnt# hexdump -s$((247*block_size)) -n 64 -C /dev/vdb
-0003dc00  c9 23 00 00 0c 00 01 00  2e 00 00 00 02 00 00 00  |.#..............|
-0003dc10  0c 00 02 00 2e 2e 00 00  ca 23 00 00 e8 03 0a 00  |.........#......|
-0003dc20  68 65 6c 6c 6f 77 6f 72  6c 64 00 00 00 00 00 00  |helloworld......|
-0003dc30  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 
-Για το μεγεθος του αρχειο /dir2/helloworld θα διαβασω απο το data block του /dir2 το πεδιο size που αντιστοιχει στο αρχειο helloworld.
-Αυτο ειιναι 03ε8 και αντιστοιχει σε μεγεθος 1000 bytes (προφανως εχει καταληφθει ενα ολοκληρο block για αυτο το αρχειο)
+1ος τροπος
+root@utopia:~# ls -l /mnt/dir2/helloworld
+-rw-r--r-- 1 root root 42 Dec 12  2023 /mnt/dir2/helloworld
+ή με stat /mnt/dir2/hellowrold
+
+2ος τροπος
+root@utopia:/mnt# hexdump -s$((40965*block_size + INODE_SIZE)) -n$((INODE_SIZE)) -C /dev/vdb
+02801480  a4 81 00 00 2a 00 00 00  e4 7a 78 65 e4 7a 78 65  |....*....zxe.zxe|
+02801490  e4 7a 78 65 00 00 00 00  00 00 01 00 02 00 00 00  |.zxe............|
+028014a0  00 00 00 00 01 00 00 00  01 04 00 00 00 00 00 00  |................|
+028014b0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+028014e0  00 00 00 00 bc f3 45 a3  00 00 00 00 00 00 00 00  |......E.........|
+028014f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+02801500
+
+Για το μεγεθος του αρχειο /dir2/helloworld θα διαβασω απο το inode του αρχειου που φαινεται παραπανω το byte offset 5. Παιρνω 2a = 42
 
 1.33
-θα διαβασω το block 1025 που βρηκα πριν οτι ειναι το data block του συγκεκριεμνου αρχειου και θα παρω τα δεδομενα του 
+1ος τροπος 
+root@utopia:~# cat /mnt/dir2/helloworld
+Welcome to the Mighty World of Filesystemsroot@utopia:~#
 
+2ος τροπος
+θα διαβασω το block 1025 που βρηκα πριν οτι ειναι το data block του συγκεκριεμνου αρχειου και θα παρω τα δεδομενα του 
 root@utopia:/mnt# hexdump -s$((1025*block_size)) -n 1204 -C /dev/vdb
 00100400  57 65 6c 63 6f 6d 65 20  74 6f 20 74 68 65 20 4d  |Welcome to the M|
 00100410  69 67 68 74 79 20 57 6f  72 6c 64 20 6f 66 20 46  |ighty World of F|
