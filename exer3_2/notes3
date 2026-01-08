@@ -29,7 +29,7 @@ e2fsck βασικο εργαλειο ανιχνευσης και διορθωσ�
 6.Πρόωρος τερματισμός διεργασιών: Αν μια διεργασία που γράφει στον δίσκο τερματιστεί βίαια, μπορεί να αφήσει το inode του αρχείου σε ασυνεπή κατάσταση.
 
 Δέκα (10) ενδεικτικές αλλοιώσεις (Corruptions)
-1.Οι αλλοιώσεις αυτές είναι αυτές που συνήθως καλείται να εντοπίσει και να διορθώσει το e2fsck:
+Οι αλλοιώσεις αυτές είναι αυτές που συνήθως καλείται να εντοπίσει και να διορθώσει το e2fsck:
 
 2.nvalid Superblock Magic Number: Ο κωδικός 0xEF53 λείπει ή έχει αλλαχτεί, με αποτέλεσμα το λειτουργικό να μην αναγνωρίζει τον δίσκο ως ext2.
 
@@ -50,3 +50,184 @@ e2fsck βασικο εργαλειο ανιχνευσης και διορθωσ�
 10.Illegal Blocks in Inode: Το inode περιέχει δείκτες (pointers) προς blocks που βρίσκονται εκτός των ορίων του δίσκου.
 
 11.Timestamp Errors: Χρονοσφραγίδες στο μέλλον ή σε μη έγκυρη μορφή λόγω αλλοίωσης των δεδομένων του inode.
+
+
+
+
+3.3
+#χωρις να κανουμε mount το corrupted file system εκτελουμε την εντολη e2fsck -y /dev/vdd, η οποια εντοπιζει και επιδιορθωνει ολα τα λαθη. Υστερα τρεχουμε
+e2fsck -n /dev/vdd ωστε να επαληθευσουμε πως τα λαθη διορθωθηκαν. 
+
+root@utopia:/dev# e2fsck -y /dev/vdd
+e2fsck 1.47.0 (5-Feb-2023)
+fsdisk3.img contains a file system with errors, check forced.
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+First entry 'BOO' (inode=1717) in directory inode 1717 (/dir-2) should be '.'
+Fix? yes
+
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Inode 3425 ref count is 1, should be 2.  Fix? yes
+
+Pass 5: Checking group summary information
+Block bitmap differences:  +34
+Fix? yes
+
+Free blocks count wrong (11840, counted=19800).
+Fix? yes
+
+
+fsdisk3.img: ***** FILE SYSTEM WAS MODIFIED *****
+fsdisk3.img: 23/5136 files (0.0% non-contiguous), 680/20480 blocks
+root@utopia:/dev# e2fsck -n /dev/vdd
+e2fsck 1.47.0 (5-Feb-2023)
+fsdisk3.img: clean, 23/5136 files, 680/20480 blocks
+
+3.4
+
+root@utopia:~# export block_size=1024
+root@utopia:~# export GDT_OFFSET=2*block_size
+root@utopia:~# export GD_SIZE=32
+root@utopia:~# export INODE_SIZE=128
+
+#ευρεση inodes per bg
+root@utopia:~# hexdump -s$((block_size+40)) -n 4 -C /dev/vdd
+00000428  b0 06 00 00  #1712
+
+#κανουμε την διαιρεση (1717-1)/1712 = 1.002336448598131 το οποιο σημαινει οτι πρεπει αν παμε στο 5ο inode του bg1
+
+#για να βρουμε το start του inode table του bg1 κοιταμε την δευτερη εγγραφη του GDT και συγκεκριμενα το byte offset 8-11
+#Παιρνουμε 0x2005 = 8197
+root@utopia:~# hexdump -s$((GDT_OFFSET+GD_SIZE)) -n$((GD_SIZE)) -C /dev/vdd
+00000820  03 20 00 00 04 20 00 00  05 20 00 00 1b 1f a8 06  |. ... ... ......|
+00000830  02 00 04 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000840
+
+#διαβαζουμε την πληροφορια του inode 1717 και συγκεκριμενα το byte offset 40-44 και παιρνουμε τον pointer για το datablcok0. Αυτο ειναι 0x20dc = 8412
+root@utopia:~# hexdump -s$((8197*block_size+4*INODE_SIZE)) -n$((INODE_SIZE)) -C /dev/vdd
+00801600  ed 41 00 00 00 04 00 00  e9 7a 78 65 e9 7a 78 65  |.A.......zxe.zxe|
+00801610  e9 7a 78 65 00 00 00 00  00 00 02 00 02 00 00 00  |.zxe............|
+00801620  00 00 00 00 04 00 00 00  dc 20 00 00 00 00 00 00  |......... ......|
+00801630  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00801660  00 00 00 00 da 39 00 7a  00 00 00 00 00 00 00 00  |.....9.z........|
+00801670  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00801680
+
+#παρουσιαζονται τα dir entries του inode 1717
+root@utopia:~# hexdump -s$((8412*block_size)) -n$((64)) -C /dev/vdd
+00837000  b5 06 00 00 0c 00 03 00  42 4f 4f 00 02 00 00 00  |........BOO.....|
+00837010  0c 00 02 00 2e 2e 00 00  b6 06 00 00 10 00 06 00  |................|
+00837020  66 69 6c 65 2d 31 00 00  b7 06 00 00 10 00 06 00  |file-1..........|
+00837030  66 69 6c 65 2d 32 00 00  b8 06 00 00 c8 03 06 00  |file-2..........|
+00837040
+
+#εκτελουμε την hexedit /dev/vdd και με ctrl+G πηγαινουμε στην διευθυνση μνημης 0x00837000 και διορθωνουμε τα πεδια len και name του 1ου dir entry. 
+#Αφου αποθηκευσουμε την αλλαγη εκτελουμε το εξης για επαληθευση.
+
+root@utopia:~# hexdump -s$((8412*block_size)) -n$((64)) -C /dev/vdd
+00837000  b5 06 00 00 0c 00 01 00  2e 00 00 00 02 00 00 00  |................|
+00837010  0c 00 02 00 2e 2e 00 00  b6 06 00 00 10 00 06 00  |................|
+00837020  66 69 6c 65 2d 31 00 00  b7 06 00 00 10 00 06 00  |file-1..........|
+00837030  66 69 6c 65 2d 32 00 00  b8 06 00 00 c8 03 06 00  |file-2..........|
+00837040
+
+#ξανατρεχουμε το e2fsck -n /dev/vdd και παρατηρουμε οτι το λαθος δεν ανιχνευεται πλεον
+
+root@utopia:~# e2fsck -n /dev/vdd
+e2fsck 1.47.0 (5-Feb-2023)
+fsdisk3.img contains a file system with errors, check forced.
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Inode 3425 ref count is 1, should be 2.  Fix? no
+
+Pass 5: Checking group summary information
+Block bitmap differences:  +34
+Fix? no
+
+Free blocks count wrong for group #0 (7960, counted=7961).
+Fix? no
+
+Free blocks count wrong (926431538, counted=19801).
+Fix? no
+
+
+fsdisk3.img: ********** WARNING: Filesystem still has errors **********
+
+fsdisk3.img: 23/5136 files (0.0% non-contiguous), 18446744072783140558/20480 blocks
+
+#κανουμε την διαιρεση (3425-1)/1712 = 2. Αρα το inode 3425 ειναι το πρωτο inode του inode table του bg2.
+#διαβαζουμε απο το gdt την 3η εγγαρφη και τα bytes 8-11 (start of inode table). Το βρισκουμε 0x4005 = 16389
+
+root@utopia:/# hexedit /dev/vdd
+root@utopia:/# hexdump -s$((GDT_OFFSET+2*GD_SIZE)) -n$((GD_SIZE)) -C /dev/vdd
+00000840  03 40 00 00 04 40 00 00  05 40 00 00 25 0f ac 06  |.@...@...@..%...|
+00000850  01 00 04 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000860
+
+#βλεπουμε οτι ref count = 1 απο το παρακατω ενω θα επρεπε αν ειναι 2
+root@utopia:/# hexdump -s$((16389*block_size+26)) -n 2 -C /dev/vdd
+0100141a  01 00                                             |..|
+0100141c
+
+#με hexedit πηγαινουμε στην θεση 0100141a και αλλαζουμε το αντιστοιχο πεδιο απο 1 σε 2
+#επαληθευση
+root@utopia:/# e2fsck -n /dev/vdd
+e2fsck 1.47.0 (5-Feb-2023)
+fsdisk3.img contains a file system with errors, check forced.
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+Block bitmap differences:  +34
+Fix? no
+
+Free blocks count wrong for group #0 (7960, counted=7961).
+Fix? no
+
+Free blocks count wrong (11840, counted=19801).
+Fix? no
+
+
+fsdisk3.img: ********** WARNING: Filesystem still has errors **********
+
+fsdisk3.img: 23/5136 files (0.0% non-contiguous), 8640/20480 blocks
+
+#διαβαζουμε το block group descriptor του bg0 και βρισκουμε block bitmap start = 3 (byte offset 0-3) και total num of unallocated blocks in group = 7960 (offset 12-13)
+root@utopia:/# hexdump -s$((GDT_OFFSET)) -n$((GD_SIZE)) -C /dev/vdd
+00000800  03 00 00 00 04 00 00 00  05 00 00 00 18 1f a5 06  |................|
+00000810  02 00 04 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000820
+
+#διαβαζουμε το bitmap
+root@utopia:/# hexdump -s$((3*block_size)) -n 1024 -C /dev/vdd
+00000c00  ff ff ff ff fd ff ff ff  ff ff ff ff ff ff ff ff  |................|
+00000c10  ff ff ff ff ff ff ff ff  ff ff ff ff ff 00 00 00  |................|
+00000c20  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00001000
+
+#απο το e2fsck και το μηνυμα Block bitmap differences:  +34 γνωρθιζουμε οτι το block 34 παρουσιαζεται ως αδεσμευτο στο bitmap
+#ενω στην πραγματικοτητα ειναι δεσμευμενο πραγμα που το δηλωνει το +. Αλλζουμε το bitmap με hexedit
+#επαληθευση
+root@utopia:/# e2fsck -n /dev/vdd
+e2fsck 1.47.0 (5-Feb-2023)
+fsdisk3.img contains a file system with errors, check forced.
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+Free blocks count wrong (11840, counted=19800).
+Fix? no
+
+fsdisk3.img: 23/5136 files (0.0% non-contiguous), 8640/20480 blocks
+
+
+
+
+
