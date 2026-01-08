@@ -211,7 +211,9 @@ root@utopia:/# hexdump -s$((3*block_size)) -n 1024 -C /dev/vdd
 *
 00001000
 
-#απο το e2fsck και το μηνυμα Block bitmap differences:  +34 γνωρθιζουμε οτι το block 34 παρουσιαζεται ως αδεσμευτο στο bitmap
+#απο το e2fsck και το μηνυμα Block bitmap differences:  +34. Γνωριζουμε οτι το e2fsck ελεγχει ολα τα inodes και μετραει τα datablocks που αυτα δεσμευουν και
+#συγκρινει το αποτελεσμα με την πληροφορια απο τα block bitmaps. Στο block 34 βλεπει ασυφωνια και εμεις με hexdump διαβαζουμε το bitmap και βλεπουμε το Block 34 να 
+#παρουσιαζεται ως αδεσμευτο. Συνεπως αλλαζουμε το bitmap με hexedit
 #ενω στην πραγματικοτητα ειναι δεσμευμενο πραγμα που το δηλωνει το +. Αλλζουμε το bitmap με hexedit
 #επαληθευση
 root@utopia:/# e2fsck -n /dev/vdd
@@ -226,6 +228,51 @@ Free blocks count wrong (11840, counted=19800).
 Fix? no
 
 fsdisk3.img: 23/5136 files (0.0% non-contiguous), 8640/20480 blocks
+
+Αυτο το ειδος του σφαλματος προκυπτει απο βιαιο/βρωμικο τερματισμο δηλαδη:
+Διακοπη ρευματος, την ωρα της ενημερωσης 
+Αφαιρεση δισκου/usb, χωρις να προλαβει να ενημερωσει το bitmap
+
+#υπολογιζουμε το συνολο των ελευθερων blocks σε καθε bg αντλωντας την καταλληλη πληροφορια απο την αντιστοιχη εγγραφη στο gdt (byte offset 12-13).
+#αθροιζουμε την πληροφορια απο ολα τα bgs και το τελικο αποτελεσμα ειναι 19800
+root@utopia:/# hexdump -s$((GDT_OFFSET)) -n$((GD_SIZE)) -C /dev/vdd
+00000800  03 00 00 00 04 00 00 00  05 00 00 00 18 1f a5 06  |................|
+00000810  02 00 04 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000820
+root@utopia:/# hexdump -s$((GDT_OFFSET+12)) -n 2 -C /dev/vdd
+0000080c  18 1f                                             |..|
+0000080e
+root@utopia:/# hexdump -s$((GDT_OFFSET+GD_SIZE+12)) -n 2 -C /dev/vdd
+0000082c  1b 1f                                             |..|
+0000082e
+root@utopia:/# hexdump -s$((GDT_OFFSET+2*GD_SIZE+12)) -n 2 -C /dev/vdd
+0000084c  25 0f                                             |%.|
+0000084e
+
+#υστερα παινρουμε και την ιδια πληροφορια απο το superblock (offset 12-15). 
+root@utopia:/# hexdump -s$((block_size+12)) -n 4  -C /dev/vdd
+0000040c  40 2e 00 00                                       |@...|
+00000410
+
+#παρατηρουμε την αποκλιση των αποτελεσματων την οποια εχει επισημανει και το e2fsck. 
+#Πορφανως το λαθος βρισκεται στο superblock το οποιο αποτελει μεταδοδομενο των μεταδεδομενων που βρικσονται στο gdt. 
+#Επομενως αυτο δεν εχει προλαβει για καποιον λογο να ενημερωθει και φροντιζουμε να το αλλαξουμε με hexedit
+#Επαληθευση
+root@utopia:/# e2fsck -n /dev/vdd
+e2fsck 1.47.0 (5-Feb-2023)
+fsdisk3.img contains a file system with errors, check forced.
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+fsdisk3.img: 23/5136 files (0.0% non-contiguous), 680/20480 blocks
+
+
+
+
+
+
 
 
 
