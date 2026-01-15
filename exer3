@@ -437,6 +437,7 @@ ev/vdb
 
 
 1.30
+1ος τροπος
 root@utopia:/mnt# hexdump -s$((40965*block_size + INODE_SIZE)) -n$((INODE_SIZE)) -C /dev/vdb
 02801480  a4 81 00 00 2a 00 00 00  e4 7a 78 65 e4 7a 78 65  |....*....zxe.zxe|
 02801490  e4 7a 78 65 00 00 00 00  00 00 01 00 02 00 00 00  |.zxe............|
@@ -446,7 +447,25 @@ root@utopia:/mnt# hexdump -s$((40965*block_size + INODE_SIZE)) -n$((INODE_SIZE))
 028014e0  00 00 00 00 bc f3 45 a3  00 00 00 00 00 00 00 00  |......E.........|
 028014f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 02801500
-με αυτον τον τροπο διαβαζω το δευτερο inode απο το inode table που ξεκιναει στο block 40965 (check αν χρειαζεται επιπλεον περιγραφη των πεδιων) 
+με αυτον τον τροπο διαβαζω το δευτερο inode απο το inode table που ξεκιναει στο block 40965 (check αν χρειαζεται επιπλεον περιγραφη των πεδιων)
+
+2ος τροπος
+debugfs /dev/vdb
+stat <inode_number> == stat <9162>
+
+Inode: 9162   Type: regular    Mode:  0644   Flags: 0x0
+Generation: 2739270588    Version: 0x00000001
+User:     0   Group:     0   Size: 42
+File ACL: 0
+Links: 1   Blockcount: 2
+Fragment:  Address: 0    Number: 0    Size: 0
+ctime: 0x65787ae4 -- Tue Dec 12 15:23:16 2023
+atime: 0x695d1f32 -- Tue Jan  6 14:41:54 2026
+mtime: 0x65787ae4 -- Tue Dec 12 15:23:16 2023
+BLOCKS:
+(0):1025
+TOTAL: 1
+
 
 1.31
 1ος τροπος
