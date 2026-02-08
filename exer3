@@ -275,6 +275,7 @@ Inode bitmap: δομή που καταγράφει ποια inodes ενός bloc
 μέγεθος
 χρονικές σφραγίδες
 δείκτες προς data blocks
+reference counter
 
 βρισκονται στο inode tabe του bg. γνωριζοντας οτι το καθε ενα καταλαμβανει 128 bytes μπορουμε να πλοηγηθουμε μεσα σε αυτο με καταλληλο byte offset. (inodeTable_start + (n-1)*128 + offset)
 
