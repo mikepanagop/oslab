@@ -172,6 +172,13 @@ root@utopia:~# hexdump -C -n 4 -s$((1024+16)) /dev/vdb
 εφεδρικα στο πρωτο block καθε block group διοτι 
 dumpe2fs /dev/vdb | grep -i sparse δεν δινει αποτελεσμα 
 
+2ος τρόπος
+
+παρατηρούμε ότι το συγκεκριμένο σύστημα αρχείων δεν είναι sparse επομένως γνωρίζουμε ότι θα υπάρχουν εφεδρικά suoperblocks στο πρώτο block κάεθ block group, καθώς επίσης και εφεδρικά block group descriptor tables αμέσως μετά από κάθε superblock. Γνωρίζοντας το μέγεθος του αρχείου και το μέγεθος κάθε block group μπορούμε εύκολα να υπολογίζουμε το block offset μέσα στα ΣΑ στο οποίο συναντάμε όλα τα block group descriptor tables  
+root@utopia:/# hexdump -C -n 3 -s 1124 /dev/vdb
+00000464  00 00 00                                          |...|
+00000467
+
 1.17
 Στο σύστημα αρχείων ext2, ένα block group είναι μια λογική υποδιαίρεση του συστήματος 
 αρχείων που περιλαμβάνει ένα σύνολο από data blocks και τις αντίστοιχες μεταδεδομένες δομές (bitmaps, inode table, αντίγραφα superblock).
