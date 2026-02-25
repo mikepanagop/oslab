@@ -24,6 +24,14 @@ root@utopia:~# hexdump -C -s 1024 -n 1024 /dev/vdb
 
 1.2
 lsblk σου δειχνει ολες τις συσκευες που εχουν προσαρτηθεί (vda vdb) το μέγεθος και τον τυπο
+root@utopia:/# lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+sr0     11:0    1 1024M  0 rom
+vda    253:0    0   10G  0 disk
+└─vda1 253:1    0   10G  0 part /
+vdb    253:16   0   50M  0 disk /mnt
+vdc    253:32   0   20M  0 disk
+vdd    253:48   0   20M  0 disk
 
 1.3
 a
