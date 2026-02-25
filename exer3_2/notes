@@ -134,6 +134,15 @@ root@utopia:/mnt# hexdump -s 1024 -n 1024 -C /dev/vdc
 *
 00000800
 
+
+
+root@utopia:/mnt# hexdump -C -s$((1024+4)) -n 4 /dev/vdc
+00000404  00 50 00 00                                       |.P..|
+00000408
+root@utopia:/mnt# hexdump -C -s$((1024+24)) -n 4 /dev/vdc
+00000418  00 00 00 00                                       |....|
+0000041c
+
 2.8
  1ος τροπος 
 
