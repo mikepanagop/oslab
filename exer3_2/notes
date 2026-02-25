@@ -84,13 +84,19 @@ root@utopia:/mnt# hexdump -s 1024 -n 1024 -C /dev/vdc
 
 2.6
 
-//df κανει συνολο blocks - free blocks σε Ο(1) απο superblock
-root@utopia:/mnt# df -h /dev/vdc  
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/vdc         20M  272K   20M   2% /mnt
+1ow tropos
+root@utopia:/mnt/dir-0/dir-0# dumpe2fs /dev/vdc | grep "Group"
+dumpe2fs 1.47.0 (5-Feb-2023)
+Group 0: (Blocks 1-8192)
+  Primary superblock at 1, Group descriptors at 2-2
+Group 1: (Blocks 8193-16384)
+  Backup superblock at 8193, Group descriptors at 8194-8194
+Group 2: (Blocks 16385-20479)
+  Backup superblock at 16385, Group descriptors at 16386-16386
 
-root@utopia:/mnt# du -sh /dev/vdc
-0       /dev/vdc
+root@utopia:/mnt/dir-0/dir-0# dumpe2fs /dev/vdc | grep "Inode count"
+dumpe2fs 1.47.0 (5-Feb-2023)
+Inode count:              5136
 
 
 2.7
