@@ -1,6 +1,8 @@
 root@utopia:/mnt# touch file
 touch: cannot touch 'file': No space left on device
 
+root@utopia:/# mount /dev/vdc /mnt
+
 2.3
 
 root@utopia:/mnt# ls
