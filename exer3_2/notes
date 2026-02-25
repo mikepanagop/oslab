@@ -149,6 +149,10 @@ root@utopia:/mnt# hexdump -C -s$((1024+24)) -n 4 /dev/vdc
 00000418  00 00 00 00                                       |....|
 0000041c
 
+
+root@utopia:/mnt/dir-0/dir-0# du -s /mnt
+270     /mnt
+
 2.8
  1ος τροπος 
 
