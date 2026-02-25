@@ -495,6 +495,19 @@ root@utopia:~# ls -l /mnt/dir2/helloworld
 -rw-r--r-- 1 root root 42 Dec 12  2023 /mnt/dir2/helloworld
 ή με stat /mnt/dir2/hellowrold
 
+
+root@utopia:/# stat /mnt/dir/helloworld
+stat: cannot statx '/mnt/dir/helloworld': No such file or directory
+root@utopia:/# stat /mnt/dir2/helloworld
+  File: /mnt/dir2/helloworld
+  Size: 42              Blocks: 2          IO Block: 1024   regular file
+Device: 253,16  Inode: 9162        Links: 1
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2026-01-06 14:41:54.000000000 +0000
+Modify: 2023-12-12 15:23:16.000000000 +0000
+Change: 2023-12-12 15:23:16.000000000 +0000
+ Birth: -
+
 2ος τροπος
 root@utopia:/mnt# hexdump -s$((40965*block_size + INODE_SIZE)) -n$((INODE_SIZE)) -C /dev/vdb
 02801480  a4 81 00 00 2a 00 00 00  e4 7a 78 65 e4 7a 78 65  |....*....zxe.zxe|
