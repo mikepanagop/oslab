@@ -41,6 +41,18 @@ root@utopia:/mnt# hexdump -C -s$((1024+1024+32+16)) -n 2 /dev/vdc
 root@utopia:/mnt# hexdump -C -s$((1024+1024+64+16)) -n 2 /dev/vdc
 00000850  5c 00                                             |\.|
 00000852
+
+root@utopia:/mnt# hexdump -C -s$((1024+16)) -n 4 /dev/vdc
+00000410  00 00 00 00                                       |....|
+00000414
+
+από την παραπάνω εντολή φαίβεται ότι κανέναν inode του ΣΑ δεν είναι διαθέσιμο
+
+root@utopia:/mnt# hexdump -C -s$((1024)) -n 4 /dev/vdc
+00000400  10 14 00 00                                       |....|
+00000404
+
+απο την παραπάνω εντολή φάινονται τα συνολικά inodes του ΣΑ. Εκτελούμε την αφαίρεση file_inodes = total_inodes - directory_inodes 
 2ος τροπος
 #διαβαζω superblock και στο byte offset 0-3 βρισκω το total inodes = 0x1410 = 5136
 #διαβαζω και στο byte offset 84 το first inode = 0x0b = 11. Και παιρνω το ιδιο αποτελεσμα με την ιδια λογικη με πριν
